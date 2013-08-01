@@ -1,8 +1,10 @@
 <?php
-    define("DEV",1);
+    define("DEV",0);
+    define("OBFUSCATED",0);
     
     // check for updates
     update::check();
+    update::obfuscate();
     
     class update {
 	const pshare = "https://raw.github.com/sn0/pshare/master/index.php";
@@ -10,6 +12,21 @@
 	
 	private static $sha_local;
 	private static $sha_remote;
+	
+	// obfuscate code
+	static public function obfuscate() {
+	    if (!DEV && !OBFUSCATED) {
+		$pshare = file_get_contents("./index.php");
+		$pshare = str_replace("<?php","",$pshare);
+		$pshare = str_replace("?>","",$pshare);
+		$pshare = str_replace("define(\"OBFUSCATED\",0);","define(\"OBFUSCATED\",1);",$pshare);
+		$pshare = "/* ".sha1(uniqid("",true))." */\n".$pshare."\n/* ".sha1(uniqid("",true))."\n */";
+		$pshare = "<?php eval(base64_decode(\"".base64_encode($pshare)."\")); ?>";
+		if (is_writeable("./index.php")) {
+		    file_put_contents("./index.php",$pshare);
+		}
+	    }
+	}
 	
 	static public function check() {
 	    self::$sha_local = @file_get_contents("./index.php.sha");
